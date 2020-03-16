@@ -13,8 +13,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
@@ -29,15 +34,16 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
+import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
-
+import javax.swing.WindowConstants;
 
 /**
  * Die Folgende Klasse ist der Launcher für das MeMate Projekt (https://github.com/isp-insoft-gmbh/MeMate).
  * Der Launcher sorgt dafür, dass die App immer auf dem neusten Stand ist.
  * Des weiteren wird noch einige openJDK JRE mit ausgeliefert, welche ebenfalls geupdatet werden kann.
- * 
+ *
  * @author nwe
  * @since 11.03.2020
  */
@@ -56,8 +62,9 @@ public class Main
   private URL                jreURL             = null;
   private URL                versionURL         = null;
   private String             jreFolderName      = null;
+  private final String       version            = "v0.9.9.2";
 
-  public static void main( String[] args )
+  public static void main( final String[] args )
   {
     new Main().run();
   }
@@ -75,12 +82,14 @@ public class Main
       System.out.println( "Das Look and Feel konnte nicht gesetzt werden." );
       exception.printStackTrace();
     }
-    catch ( IOException IOException )
+    catch ( final IOException IOException )
     {
       System.out.println( "background.png konnte nicht gefunden werden." );
       IOException.printStackTrace();
     }
-    String exeOutputPath = mainPath + "memate.exe";
+    final String exeOutputPath = mainPath + "memate.exe";
+
+    getLatestRelease();
 
     createDirectories();
     loadGUISettings();
@@ -112,10 +121,39 @@ public class Main
       frame.dispose();
       new ProcessBuilder( mainPath + "memate.exe" ).start();
     }
-    catch ( IOException IOException )
+    catch ( final IOException IOException )
     {
       System.out.println( "Die memate.exe konnte nicht gestartet werden." );
       IOException.printStackTrace();
+    }
+  }
+
+  private void getLatestRelease()
+  {
+    final String url = "https://api.github.com/repos/isp-insoft-gmbh/MeMate/releases/latest";
+
+
+    try
+    {
+      final HttpClient client = HttpClient.newHttpClient();
+      final HttpRequest request = HttpRequest.newBuilder()
+          .uri( URI.create( url ) )
+          .build();
+
+      final HttpResponse<String> response =
+          client.send( request, BodyHandlers.ofString() );
+
+
+      final String jsonBody = response.body();
+
+
+      System.out.println( jsonBody );
+
+
+    }
+    catch ( final IOException | InterruptedException ex )
+    {
+      ex.printStackTrace();
     }
   }
 
@@ -123,10 +161,10 @@ public class Main
   {
     try
     {
-      exeURL = new URL( "https://github.com/isp-insoft-gmbh/MeMate/releases/download/v0.9.9.2/memate.exe" );
-      versionURL = new URL( "https://github.com/isp-insoft-gmbh/MeMate/releases/download/v0.9.9.2/version.properties" );
+      exeURL = new URL( "https://github.com/isp-insoft-gmbh/MeMate/releases/download/" + version + "/memate.exe" );
+      versionURL = new URL( "https://github.com/isp-insoft-gmbh/MeMate/releases/download/" + version + "/version.properties" );
     }
-    catch ( MalformedURLException exception )
+    catch ( final MalformedURLException exception )
     {
       System.out.println( "Die URL konnte nicht gefunden werden!" );
       exception.printStackTrace();
@@ -136,8 +174,8 @@ public class Main
 
   private void createDirectories()
   {
-    File meMateDir = new File( System.getenv( "APPDATA" ) + File.separator + "MeMate" );
-    File installationDir = new File( System.getenv( "APPDATA" ) + File.separator + "MeMate" + File.separator + "Installation" );
+    final File meMateDir = new File( System.getenv( "APPDATA" ) + File.separator + "MeMate" );
+    final File installationDir = new File( System.getenv( "APPDATA" ) + File.separator + "MeMate" + File.separator + "Installation" );
     meMateDir.mkdir();
     installationDir.mkdir();
   }
@@ -161,11 +199,11 @@ public class Main
     String installedJreURL = null;
     String installedJreSignature = null;
     String installedJreFolderName = null;
-    String propertiesOutputPath = mainPath + "version.properties";
+    final String propertiesOutputPath = mainPath + "version.properties";
     downloadFile( versionURL, propertiesOutputPath );
     try ( InputStream input = new FileInputStream( propertiesOutputPath ) )
     {
-      Properties versionProperties = new Properties();
+      final Properties versionProperties = new Properties();
       versionProperties.load( input );
       newestversion = versionProperties.getProperty( "build_version" );
       newsestJreURL = versionProperties.getProperty( "jre_URL_Win64" );
@@ -174,24 +212,24 @@ public class Main
       jreURL = new URL( newsestJreURL );
       jreFolderName = newestJreFolderName;
     }
-    catch ( Exception exception )
+    catch ( final Exception exception )
     {
       System.out.println( "Die version.properties konnten nicht geladen werden" );
       exception.printStackTrace();
     }
 
-    File installedVersionsProperties = new File( mainPath + "installedVersions.properties" );
+    final File installedVersionsProperties = new File( mainPath + "installedVersions.properties" );
     if ( !installedVersionsProperties.exists() )
     {
       System.out.println( "Die installedVersions.properties konnten nicht gefunden werden" );
-      File versionInfoProperties = new File( propertiesOutputPath );
+      final File versionInfoProperties = new File( propertiesOutputPath );
       versionInfoProperties.renameTo( installedVersionsProperties );
     }
     else
     {
       try ( InputStream input = new FileInputStream( mainPath + "installedVersions.properties" ) )
       {
-        Properties versionProperties = new Properties();
+        final Properties versionProperties = new Properties();
         versionProperties.load( input );
         installedversion = versionProperties.getProperty( "build_version" );
         installedJreURL = versionProperties.getProperty( "jre_URL_Win64" );
@@ -199,7 +237,7 @@ public class Main
         installedJreFolderName = versionProperties.getProperty( "jre_FolderName_Win64" );
 
       }
-      catch ( Exception exception )
+      catch ( final Exception exception )
       {
         exception.printStackTrace();
       }
@@ -228,7 +266,7 @@ public class Main
       }
       if ( clientNeedsUpdate || jreNeedsUpdate )
       {
-        File versionInfoProperties = new File( propertiesOutputPath );
+        final File versionInfoProperties = new File( propertiesOutputPath );
         versionInfoProperties.renameTo( installedVersionsProperties );
       }
     }
@@ -239,15 +277,15 @@ public class Main
   {
     System.out.println( "Unzipping jre.zip..." );
     progressLabeL.setText( "Unzipping jre.zip..." );
-    String jreZIP = mainPath + "jre.zip";
-    File targetDirectory = new File( mainPath );
-    var buffer = new byte[1024];
+    final String jreZIP = mainPath + "jre.zip";
+    final File targetDirectory = new File( mainPath );
+    final var buffer = new byte[1024];
     try ( ZipInputStream zis = new ZipInputStream( new FileInputStream( jreZIP ) ) )
     {
       ZipEntry zipEntry = zis.getNextEntry();
       while ( zipEntry != null )
       {
-        File nextFilePath = new File( targetDirectory.getAbsolutePath() + File.separator + zipEntry.getName() );
+        final File nextFilePath = new File( targetDirectory.getAbsolutePath() + File.separator + zipEntry.getName() );
         if ( zipEntry.isDirectory() )
         {
           nextFilePath.mkdirs();
@@ -268,7 +306,7 @@ public class Main
         zipEntry = zis.getNextEntry();
       }
     }
-    catch ( Exception e )
+    catch ( final Exception e )
     {
       System.out.println( "Unzippen fehlgeschlagen!" );
       e.printStackTrace();
@@ -280,12 +318,12 @@ public class Main
   {
     System.out.println( "Deleting jre.zip..." );
     progressLabeL.setText( "Deleting jre.zip..." );
-    File zip = new File( mainPath + "jre.zip" );
+    final File zip = new File( mainPath + "jre.zip" );
     try
     {
       zip.delete();
     }
-    catch ( Exception e )
+    catch ( final Exception e )
     {
       System.out.println( "Die jre.zip konnte nicht gefunden werden" );
     }
@@ -296,17 +334,17 @@ public class Main
   {
     System.out.println( "Deleting version.properties..." );
     progressLabeL.setText( "Deleting version.properties..." );
-    File properties = new File( mainPath + "version.properties" );
+    final File properties = new File( mainPath + "version.properties" );
     properties.delete();
     System.out.println( "*************************************" );
   }
 
   /*
    * Startet den Download einer Datei aus der angegebenen URl und speichert diese im outputPath.
-   * Außerdem wird für jeden Download zuerst die Größe ausgegeben und der Downloadfortschritt 
+   * Außerdem wird für jeden Download zuerst die Größe ausgegeben und der Downloadfortschritt
    * wird sowohl auf der Konsole als auch auf der GUI dargestellt.
    */
-  private void downloadFile( URL url, String outputPath )
+  private void downloadFile( final URL url, final String outputPath )
   {
     try
     {
@@ -314,38 +352,38 @@ public class Main
       {
         progressLabeL.setText( "Downloading " + outputPath.replace( mainPath, "" ) + "...." );
       }
-      URLConnection urlConnection = url.openConnection();
+      final URLConnection urlConnection = url.openConnection();
       urlConnection.connect();
-      long fileSize = urlConnection.getContentLengthLong();
-      long onePercent = fileSize / 100;
-      ReadableByteChannel readableByteChannel = Channels.newChannel( url.openStream() );
-      FileOutputStream fileOutputStream = new FileOutputStream( outputPath );
-      FileChannel fileChannel = fileOutputStream.getChannel();
-      TimerTask task = new TimerTask()
+      final long fileSize = urlConnection.getContentLengthLong();
+      final long onePercent = fileSize / 100;
+      final ReadableByteChannel readableByteChannel = Channels.newChannel( url.openStream() );
+      final FileOutputStream fileOutputStream = new FileOutputStream( outputPath );
+      final FileChannel fileChannel = fileOutputStream.getChannel();
+      final TimerTask task = new TimerTask()
       {
         @Override
         public void run()
         {
           try
           {
-            long percent = fileChannel.size() / onePercent;
+            final long percent = fileChannel.size() / onePercent;
             System.out.println( fileChannel.size() + " (" + percent + "%)" );
             switch ( outputPath.replace( mainPath, "" ) )
             {
               case "memate.exe" -> overallProgressBar.setValue( (int) (percent / 5) + 10 );
-              case "jre.zip" -> overallProgressBar.setValue( (int) ((percent / 1.6665) + 30) );
-              case "version.properties" -> overallProgressBar.setValue( (int) ((percent / 10)) );
+              case "jre.zip" -> overallProgressBar.setValue( (int) (percent / 1.6665 + 30) );
+              case "version.properties" -> overallProgressBar.setValue( (int) (percent / 10) );
 
               default -> throw new IllegalArgumentException( "Unexpected value: " + outputPath.replace( mainPath, "" ) );
             }
           }
-          catch ( IOException e )
+          catch ( final IOException e )
           {
             e.printStackTrace();
           }
         }
       };
-      Timer timer = new Timer();
+      final Timer timer = new Timer();
       System.out.println( "Starting download for " + outputPath.replace( mainPath, "" ) + " (" + fileSize + " Bytes)" );
       timer.schedule( task, 0, 20 );
       fileOutputStream.getChannel()
@@ -355,7 +393,7 @@ public class Main
       System.out.println( "*************************************" );
       fileOutputStream.close();
     }
-    catch ( IOException e )
+    catch ( final IOException e )
     {
       e.printStackTrace();
     }
@@ -364,15 +402,15 @@ public class Main
   private void loadGUISettings()
   {
     frame.setTitle( "MeMate Launcher" );
-    frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+    frame.setDefaultCloseOperation( WindowConstants.EXIT_ON_CLOSE );
     progressLabeL.setForeground( new Color( 29, 205, 205 ) );
-    progressLabeL.setHorizontalAlignment( JLabel.CENTER );
+    progressLabeL.setHorizontalAlignment( SwingConstants.CENTER );
     progressLabeL.setFont( progressLabeL.getFont().deriveFont( 20f ) );
     overallProgressBar.setStringPainted( true );
-    JPanel mainpanel = new JPanel()
+    final JPanel mainpanel = new JPanel()
     {
       @Override
-      protected void paintComponent( Graphics g )
+      protected void paintComponent( final Graphics g )
       {
         super.paintComponent( g );
         g.drawImage( background, 0, 0, this );
@@ -384,14 +422,14 @@ public class Main
     mainpanel.repaint();
     mainpanel.setLayout( new GridBagLayout() );
 
-    GridBagConstraints upperFillLabel = new GridBagConstraints();
+    final GridBagConstraints upperFillLabel = new GridBagConstraints();
     upperFillLabel.gridx = 0;
     upperFillLabel.gridy = 0;
     upperFillLabel.gridwidth = 2;
     upperFillLabel.weighty = 1;
     upperFillLabel.fill = GridBagConstraints.BOTH;
     mainpanel.add( new JLabel(), upperFillLabel );
-    GridBagConstraints leftFillLabel = new GridBagConstraints();
+    final GridBagConstraints leftFillLabel = new GridBagConstraints();
     leftFillLabel.gridx = 0;
     leftFillLabel.gridy = 1;
     leftFillLabel.gridheight = 2;
@@ -400,7 +438,7 @@ public class Main
     leftFillLabel.fill = GridBagConstraints.HORIZONTAL;
     leftFillLabel.anchor = GridBagConstraints.WEST;
     mainpanel.add( new JLabel(), leftFillLabel );
-    GridBagConstraints progressBarConstraints = new GridBagConstraints();
+    final GridBagConstraints progressBarConstraints = new GridBagConstraints();
     progressBarConstraints.gridx = 1;
     progressBarConstraints.gridy = 1;
     progressBarConstraints.weighty = 0.2;
@@ -410,7 +448,7 @@ public class Main
     progressBarConstraints.ipadx = 115;
     progressBarConstraints.insets = new Insets( 0, 0, 0, 60 );
     mainpanel.add( overallProgressBar, progressBarConstraints );
-    GridBagConstraints progressLabeLConstraints = new GridBagConstraints();
+    final GridBagConstraints progressLabeLConstraints = new GridBagConstraints();
     progressLabeLConstraints.gridx = 1;
     progressLabeLConstraints.gridy = 2;
     progressLabeLConstraints.weighty = 0;

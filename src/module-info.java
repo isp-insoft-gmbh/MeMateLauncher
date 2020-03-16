@@ -6,4 +6,5 @@
 module launcher
 {
   requires java.desktop;
+  requires java.net.http;
 }
