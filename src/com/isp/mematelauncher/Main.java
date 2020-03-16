@@ -39,6 +39,8 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.WindowConstants;
 
+import org.json.JSONObject;
+
 /**
  * Die Folgende Klasse ist der Launcher für das MeMate Projekt (https://github.com/isp-insoft-gmbh/MeMate).
  * Der Launcher sorgt dafür, dass die App immer auf dem neusten Stand ist.
@@ -62,7 +64,7 @@ public class Main
   private URL                jreURL             = null;
   private URL                versionURL         = null;
   private String             jreFolderName      = null;
-  private final String       version            = "v0.9.9.2";
+  private String             version            = null;
 
   public static void main( final String[] args )
   {
@@ -146,8 +148,9 @@ public class Main
 
       final String jsonBody = response.body();
 
-
-      System.out.println( jsonBody );
+      final JSONObject myObject = new JSONObject( response.body() );
+      version = myObject.getString( "tag_name" );
+      System.out.println( version );
 
 
     }
